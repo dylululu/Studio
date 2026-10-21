@@ -1,0 +1,26 @@
+# Visual styling guidelines for PillowGraphicsProvider
+canvas:
+  width: 1080
+  height: 1920
+  aspect_ratio: "9:16"
+
+colors:
+  # Gradient colors: Dark investigation documentary theme
+  background_start: [11, 19, 43]   # Deep navy (#0B132B)
+  background_end: [28, 15, 26]     # Deep dark crimson (#1C0F1A)
+  card_background: [20, 27, 45, 230] # Semi-transparent dark card
+  card_border: [239, 68, 68]       # Red alert (#EF4444)
+  accent_warning: [245, 158, 11]   # Amber (#F59E0B)
+  accent_cyan: [6, 182, 212]       # Cyan tech glow (#06B6D4)
+  text_primary: [255, 255, 255]
+  text_secondary: [203, 213, 225]
+  text_muted: [148, 163, 184]
+  chat_bubble: [30, 41, 59]
+  chat_bubble_border: [71, 85, 105]
+
+badge:
+  text: "● CẢNH BÁO LỪA ĐẢO CÔNG NGHỆ CAO"
+  color: [239, 68, 68]
+
+footer:
+  hashtag: "#CanhBaoLuaDao #AntiScamStudio #AI_Content"

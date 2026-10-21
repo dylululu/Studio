@@ -1,0 +1,36 @@
+# Active main provider: switch between 'mock' and 'gemini' in 1 line
+active_provider: gemini
+
+# Active image provider: 'pillow_graphics' (mặc định, miễn phí, không cần quota), 'gemini' (tùy chọn, cần billing), hoặc 'mock'
+active_image_provider: pillow_graphics
+
+gemini:
+  # LLM Model Tiers (Tra cứu tài liệu chính thức SDK google-genai)
+  models:
+    # Fast tier: dùng cho Scout, Caption, QA (phản hồi tức thì, hỗ trợ Free & Pay-as-you-go)
+    fast: "gemini-3.5-flash-lite"
+    # Smart tier: dùng cho FactChecker, StoryWriter, Compliance
+    smart: "gemini-3.5-flash-lite"
+
+  pricing:
+    "gemini-3.8-flash":
+      prompt_per_1m: 0.15
+      candidate_per_1m: 0.60
+    "gemini-3.5-flash-lite":
+      prompt_per_1m: 0.075
+      candidate_per_1m: 0.30
+
+  # TTS Configuration
+  tts:
+    model: "gemini-3.8-flash-tts"
+    voice: "Aoede" # Giọng đọc phù hợp thể loại điều tra/kể chuyện
+    language: "vi"
+    style: "cảnh báo nghiêm túc, đanh thép, rõ ràng"
+    # TODO: Tinh chỉnh voice persona tiếng Việt riêng khi Google mở rộng Voice Design endpoint
+
+  # Image Generation (Nano Banana series)
+  image:
+    model: "gemini-nano-banana-2.1"
+    aspect_ratio: "9:16" # Khung dọc chuẩn TikTok
+    style_prompt: "Phong cách đồ họa hoạt họa minh họa 3D trừu tượng, gam màu tối cảnh báo, tuyệt đối không dùng mặt người thật"
+    # TODO: Tích hợp multi-image reference fusion khi mở rộng phong cách cố định cho toàn bộ series

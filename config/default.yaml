@@ -1,0 +1,19 @@
+app:
+  name: "TikTok Scam-Alert Studio"
+  version: "0.1.0"
+  description: "Pipeline đa agent tự động tạo video 30-60s kể chuyện điều tra cảnh báo lừa đảo"
+
+storage:
+  db_path: "data/studio.db"
+  assets_dir: "assets"
+  output_dir: "data/output"
+
+orchestrator:
+  max_retries: 2
+  retry_backoff_seconds: 0.5
+
+compliance:
+  min_sources: 1
+  min_checklist_items: 3
+  is_aigc: true
+  human_review_required: true
