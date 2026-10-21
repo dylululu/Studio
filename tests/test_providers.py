@@ -85,19 +85,20 @@ def test_gemini_llm_retry_on_invalid_json():
     provider = GeminiLLMProvider()
     provider.client = MagicMock()
 
-    # Create mock interaction with invalid json on first call, valid on second
+    # Create mock response with invalid json on first call, valid on second
     mock_bad_resp = MagicMock()
-    mock_bad_resp.output_text = "This is not json"
-    mock_bad_resp.usage = MagicMock(prompt_tokens=10, candidate_tokens=20, total_tokens=30)
+    mock_bad_resp.text = "This is not json"
+    mock_bad_resp.usage_metadata = MagicMock(prompt_token_count=10, candidates_token_count=20, total_token_count=30)
 
     valid_script = MockLLMProvider().generate_json("test", Script).model_dump_json()
     mock_good_resp = MagicMock()
-    mock_good_resp.output_text = valid_script
-    mock_good_resp.usage = MagicMock(prompt_tokens=10, candidate_tokens=50, total_tokens=60)
+    mock_good_resp.text = valid_script
+    mock_good_resp.usage_metadata = MagicMock(prompt_token_count=10, candidates_token_count=50, total_token_count=60)
 
-    provider.client.interactions.create.side_effect = [mock_bad_resp, mock_good_resp]
+    provider.client.models.generate_content.side_effect = [mock_bad_resp, mock_good_resp]
     res = provider.generate_json("Prompt", Script)
     assert isinstance(res, Script)
-    assert provider.client.interactions.create.call_count == 2
+    assert provider.client.models.generate_content.call_count == 2
     assert provider.last_usage is not None
     assert provider.last_usage.total_tokens == 60
+

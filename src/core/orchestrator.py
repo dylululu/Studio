@@ -6,12 +6,12 @@ import time
 import traceback
 from typing import Any, Callable, Dict, Optional
 
+from src.agents.fact_checker import FactCheckerAgent
+from src.agents.story_writer import StoryWriterAgent
+from src.agents.compliance_guard import ComplianceGuardAgent
 from src.agents.stubs import (
-    FactCheckerStubAgent,
-    PublisherStubAgent,
-    QAStubAgent,
     RenderStubAgent,
-    StoryWriterStubAgent,
+    PublisherStubAgent,
 )
 from src.core.config import Config
 from src.core.db import Database
@@ -69,15 +69,22 @@ class Orchestrator:
         self._register_default_agents()
 
     def _register_default_agents(self) -> None:
-        """Register default stub agents if not already present."""
+        """Register real agents (Đợt 2) nếu chưa có."""
+        llm = get_llm_provider(self.config)
+
         if not self.registry.has("fact_checker"):
-            self.registry.register("fact_checker", FactCheckerStubAgent())
+            self.registry.register("fact_checker", FactCheckerAgent(llm=llm))
         if not self.registry.has("story_writer"):
-            self.registry.register("story_writer", StoryWriterStubAgent())
+            writer = StoryWriterAgent(llm=llm)
+            self.registry.register("story_writer", writer)
+        if not self.registry.has("qa_compliance"):
+            writer_for_revision = StoryWriterAgent(llm=llm)
+            self.registry.register(
+                "qa_compliance",
+                ComplianceGuardAgent(llm=llm, writer_agent=writer_for_revision),
+            )
         if not self.registry.has("renderer"):
             self.registry.register("renderer", RenderStubAgent())
-        if not self.registry.has("qa_compliance"):
-            self.registry.register("qa_compliance", QAStubAgent())
         if not self.registry.has("publisher"):
             self.registry.register("publisher", PublisherStubAgent())
 

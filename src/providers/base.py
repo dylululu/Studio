@@ -6,7 +6,7 @@ import os
 import wave
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 from PIL import Image, ImageDraw, ImageFont
 from pydantic import BaseModel
@@ -180,6 +180,82 @@ class MockLLMProvider(LLMProvider):
                 ],
             )
             return mock_topic  # type: ignore
+
+        # ── Đợt 2: Schema của các agent mới ─────────────────────────────────
+        schema_name = schema.__name__
+
+        if schema_name == "ScoutOutput":
+            from src.agents.trend_scout import ScoredTopic, ScoutOutput
+            return ScoutOutput(topics=[
+                ScoredTopic(
+                    title="Lừa đảo Deepfake giả giọng người thân đòi tiền khẩn cấp",
+                    summary="Kẻ gian clone giọng nói bằng AI rồi giả vờ người thân gọi xin tiền gấp.",
+                    scam_type="deepfake",
+                    target_audience="Người lớn tuổi, phụ huynh",
+                    score=9.2,
+                    sources=[Source(title="Cục An toàn thông tin", url="https://ais.gov.vn/mock")],
+                )
+            ])  # type: ignore
+
+        if schema_name == "FactOutput":
+            from src.agents.fact_checker import FactEvent, FactOutput
+            return FactOutput(
+                status="VERIFIED",
+                reason="",
+                facts=[
+                    FactEvent(
+                        event="Công an TP.HCM ghi nhận 47 vụ lừa đảo deepfake giọng nói trong Q3/2026.",
+                        source_title="Báo VnExpress",
+                        source_url="https://vnexpress.net/mock-fact",
+                    ),
+                    FactEvent(
+                        event="Nạn nhân trung bình mất 85 triệu đồng mỗi vụ theo thống kê Bộ Công an.",
+                        source_title="Cục An toàn thông tin",
+                        source_url="https://ais.gov.vn/mock-fact",
+                    ),
+                    FactEvent(
+                        event="Kẻ gian chỉ cần 3 giây mẫu giọng từ mạng xã hội để tạo bản clone.",
+                        source_title="Báo Tuổi Trẻ",
+                        source_url="https://tuoitre.vn/mock-fact",
+                    ),
+                ],
+                verified_sources=[
+                    Source(title="Báo VnExpress", url="https://vnexpress.net/mock-fact"),
+                    Source(title="Cục An toàn thông tin", url="https://ais.gov.vn/mock-fact"),
+                ],
+            )  # type: ignore
+
+        if schema_name == "WriterOutput":
+            from src.agents.story_writer import WriterOutput
+            return WriterOutput(
+                hook="47 người mất hết tiền tiết kiệm chỉ vì một cuộc gọi — giọng người thân họ!",
+                beats=[
+                    Beat(
+                        text="Kẻ gian thu thập 3 giây giọng nói từ video mạng xã hội, dùng AI clone hoàn hảo.",
+                        visual_hint="Sóng âm thanh biến thành mã nhị phân đỏ trên nền tối.",
+                    ),
+                    Beat(
+                        text="Chúng gọi điện: 'Con bị tai nạn, cần chuyển tiền gấp!' — chính xác giọng người thân bạn.",
+                        visual_hint="Điện thoại rung trong bóng tối, đồng hồ đếm ngược màu đỏ.",
+                    ),
+                    Beat(
+                        text="Twist: AI chỉ cần 3 giây mẫu — ai đăng video nói chuyện đều có thể là nạn nhân tiếp theo.",
+                        visual_hint="Vòng tròn kết nối mạng xã hội thu nhỏ thành mục tiêu.",
+                    ),
+                ],
+                checklist=[
+                    "Gọi lại trực tiếp số điện thoại quen thuộc của người thân.",
+                    "Hỏi câu hỏi bí mật chỉ hai người biết.",
+                    "Tuyệt đối không chuyển tiền vào tài khoản người lạ.",
+                ],
+                cta="Gửi ngay video này cho bố mẹ để bảo vệ họ khỏi bẫy AI!",
+                sources=[Source(title="Cục An toàn thông tin", url="https://ais.gov.vn/mock")],
+                risk_flags=[],
+            )  # type: ignore
+
+        if schema_name == "ComplianceOutput":
+            from src.agents.compliance_guard import ComplianceOutput
+            return ComplianceOutput(passed=True, violations=[])  # type: ignore
 
         # Fallback to default model creation if fields allow
         try:

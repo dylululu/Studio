@@ -257,5 +257,91 @@ def doctor() -> None:
     console.print(table)
 
 
+@app.command("script")
+def generate_script(
+    topic: str = typer.Option(..., "--topic", "-t", help="Chủ đề lừa đảo cần viết kịch bản"),
+    variant: str = typer.Option("A", "--variant", "-v", help="Variant hook A hoặc B"),
+    url: Optional[str] = typer.Option(None, "--url", "-u", help="URL nguồn kiểm chứng (tùy chọn)"),
+) -> None:
+    """Chạy pipeline Scout→FactChecker→StoryWriter→ComplianceGuard và in kịch bản ra màn hình."""
+    from src.agents.fact_checker import FactCheckerAgent
+    from src.agents.story_writer import StoryWriterAgent
+    from src.agents.compliance_guard import ComplianceGuardAgent
+    from src.core.models import JobStatus, Source, Topic, VideoJob
+
+    console.print(f"[bold cyan]>> Tạo kịch bản cho:[/bold cyan] {topic}  [dim](variant {variant})[/dim]\n")
+
+    sources = []
+    if url:
+        sources.append(Source(title="Nguồn do người dùng cung cấp", url=url))
+
+    job = VideoJob(
+        status=JobStatus.SCOUTED,
+        topic=Topic(title=topic, sources=sources),
+    )
+
+    llm = get_llm_provider()
+
+    # Bước 1: FactChecker
+    console.print("[dim]1/3 FactChecker đang xác minh...[/dim]")
+    fc = FactCheckerAgent(llm=llm, check_urls=False)
+    job = fc.run(job)
+    if job.status == JobStatus.REJECTED:
+        console.print(f"[bold red]REJECTED bởi FactChecker:[/bold red] {job.error_message}")
+        raise typer.Exit(code=1)
+
+    # Bước 2: StoryWriter
+    console.print("[dim]2/3 StoryWriter đang viết kịch bản...[/dim]")
+    sw = StoryWriterAgent(llm=llm, variant=variant)
+    job = sw.run(job)
+    if job.status == JobStatus.FAILED:
+        console.print(f"[bold red]StoryWriter thất bại:[/bold red] {job.error_message}")
+        raise typer.Exit(code=1)
+
+    # Bước 3: ComplianceGuard
+    console.print("[dim]3/3 ComplianceGuard kiểm tra nội dung...[/dim]")
+    cg = ComplianceGuardAgent(llm=llm)
+    job = cg.run(job)
+
+    if not job.script:
+        console.print("[bold red]Không tạo được kịch bản.[/bold red]")
+        raise typer.Exit(code=1)
+
+    s = job.script
+    compliance_ok = job.status == JobStatus.QA_PASSED
+
+    console.print("\n" + "═" * 60)
+    console.print(f"[bold yellow]🎬 KỊCH BẢN — {topic}[/bold yellow]  [dim]Variant {variant}[/dim]")
+    console.print("═" * 60)
+    console.print(f"\n[bold cyan]HOOK[/bold cyan]  {s.hook}\n")
+
+    for i, beat in enumerate(s.beats, 1):
+        console.print(f"[bold]BEAT {i}[/bold]  {beat.text}")
+        console.print(f"        [dim italic]▶ {beat.visual_hint}[/dim italic]\n")
+
+    console.print("[bold cyan]CHECKLIST NHẬN BIẾT[/bold cyan]")
+    for item in s.checklist:
+        console.print(f"  ✔ {item}")
+
+    console.print(f"\n[bold cyan]CTA[/bold cyan]  {s.cta}\n")
+
+    console.print("[bold cyan]NGUỒN KIỂM CHỨNG[/bold cyan]")
+    for src in s.sources:
+        console.print(f"  - {src.title}: {src.url}")
+
+    if s.risk_flags:
+        console.print("\n[bold red]⚠ Risk Flags:[/bold red]")
+        for flag in s.risk_flags:
+            console.print(f"  ! {flag}")
+
+    console.print("\n" + "═" * 60)
+    if compliance_ok:
+        console.print("[bold green]✅ Compliance: ĐẠT — sẵn sàng cho duyệt thủ công[/bold green]")
+    else:
+        console.print(f"[bold red]❌ Compliance: {job.status.value}[/bold red] — {job.error_message}")
+    console.print("═" * 60)
+
+
 if __name__ == "__main__":
     app()
+

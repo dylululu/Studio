@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Type, TypeVar
 from pydantic import BaseModel, ValidationError
 
 from google import genai
+from google.genai import types
 from google.genai.errors import APIError
 
 from src.core.config import Config
@@ -35,9 +36,9 @@ class GeminiLLMProvider(LLMProvider):
     def _resolve_model(self, tier: str) -> str:
         """Resolve model name by tier from config/providers.yaml."""
         if tier == "smart":
-            return self.models_cfg.get("smart", "gemini-3.8-flash")
+            return self.models_cfg.get("smart", "gemini-3.5-flash-lite")
         # default fast
-        return self.models_cfg.get("fast", "gemini-3.8-flash")
+        return self.models_cfg.get("fast", "gemini-3.5-flash-lite")
 
     def _calculate_cost(self, model: str, prompt_tokens: int, candidate_tokens: int) -> float:
         """Estimate cost in USD from token counts and config pricing."""
@@ -58,34 +59,30 @@ class GeminiLLMProvider(LLMProvider):
             raise ValueError("GEMINI_API_KEY is not set. Please set GEMINI_API_KEY in .env.")
 
         model_name = self._resolve_model(tier)
-        schema_json = schema.model_json_schema()
 
-        call_params: Dict[str, Any] = {
-            "model": model_name,
-            "input": prompt,
-            "response_format": {
-                "type": "text",
-                "mime_type": "application/json",
-                "schema": schema_json,
-            },
-        }
-        if system_instruction:
-            # Interaction API accepts interaction-scoped system_instruction
-            call_params["system_instruction"] = system_instruction
+        gen_config = types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=schema,
+            system_instruction=system_instruction,
+        )
 
         last_error: Optional[Exception] = None
+        current_prompt = prompt
 
-        # Up to 2 attempts: attempt 1 + 1 retry on validation failure
         for attempt in range(2):
             try:
-                interaction = self.client.interactions.create(**call_params)
-                raw_text = interaction.output_text or ""
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=current_prompt,
+                    config=gen_config,
+                )
+                raw_text = response.text or ""
 
                 # Extract token usage if provided
-                usage = getattr(interaction, "usage", None)
-                p_tokens = getattr(usage, "prompt_tokens", 0) or getattr(usage, "input_tokens", 0) or 0
-                c_tokens = getattr(usage, "candidate_tokens", 0) or getattr(usage, "output_tokens", 0) or 0
-                t_tokens = getattr(usage, "total_tokens", 0) or (p_tokens + c_tokens)
+                usage = getattr(response, "usage_metadata", None)
+                p_tokens = getattr(usage, "prompt_token_count", 0) or 0
+                c_tokens = getattr(usage, "candidates_token_count", 0) or 0
+                t_tokens = getattr(usage, "total_token_count", 0) or (p_tokens + c_tokens)
 
                 self.last_usage = LLMUsage(
                     provider="gemini",
@@ -103,14 +100,12 @@ class GeminiLLMProvider(LLMProvider):
             except (ValidationError, json.JSONDecodeError) as e:
                 last_error = e
                 logger.warning(f"Schema validation failed on attempt {attempt + 1}: {e}. Retrying once...")
-                # Augment prompt for retry with error guidance
-                call_params["input"] = (
+                current_prompt = (
                     f"{prompt}\n\n"
                     f"IMPORTANT: Your previous output failed schema validation with error: {str(e)}.\n"
                     f"Please output strictly valid JSON conforming exactly to the required schema."
                 )
             except Exception as e:
-                # API error or unexpected network issue
                 raise e
 
         if last_error:
@@ -118,16 +113,17 @@ class GeminiLLMProvider(LLMProvider):
         raise RuntimeError("Failed to generate valid structured JSON from Gemini LLM")
 
     def health_check(self) -> bool:
-        """Ping Gemini API with a minimal interaction to verify API key and model availability."""
+        """Ping Gemini API with a minimal generation to verify API key and model availability."""
         if not self.client:
             return False
         try:
             model_name = self._resolve_model("fast")
-            interaction = self.client.interactions.create(
+            response = self.client.models.generate_content(
                 model=model_name,
-                input="Health check test. Reply with 'OK'.",
+                contents="Health check test. Reply with 'OK'.",
             )
-            return bool(interaction and interaction.output_text)
+            return bool(response and response.text)
         except Exception as e:
             logger.error(f"Gemini LLM health check failed: {e}")
             return False
+

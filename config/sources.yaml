@@ -1,0 +1,56 @@
+# Nguồn tin RSS / URL cảnh báo lừa đảo từ cơ quan chức năng và báo chính thống
+# Mỗi entry: name, url, type (rss|html), trust_level (1-3, 3=cao nhất)
+
+sources:
+  - name: "Cục An toàn thông tin - Bộ TT&TT"
+    url: "https://ais.gov.vn/canh-bao-lua-dao-moi-nhat"
+    type: html
+    trust_level: 3
+
+  - name: "Cổng thông tin Bộ Công an"
+    url: "https://bocongan.gov.vn/canh-bao-lua-dao"
+    type: html
+    trust_level: 3
+
+  - name: "VnExpress - Pháp luật"
+    url: "https://vnexpress.net/phap-luat/rss"
+    type: rss
+    trust_level: 2
+
+  - name: "Tuổi Trẻ Online"
+    url: "https://tuoitre.vn/rss/tin-moi-nhat.rss"
+    type: rss
+    trust_level: 2
+
+  - name: "Thanh Niên"
+    url: "https://thanhnien.vn/rss/home.rss"
+    type: rss
+    trust_level: 2
+
+  - name: "Zing News - Pháp luật"
+    url: "https://znews.vn/phap-luat/rss"
+    type: rss
+    trust_level: 2
+
+  - name: "Báo Công an nhân dân"
+    url: "https://cand.com.vn/rss/phap-luat.rss"
+    type: rss
+    trust_level: 3
+
+# Từ khóa lọc bài liên quan lừa đảo công nghệ cao
+keywords:
+  - "lừa đảo"
+  - "deepfake"
+  - "giả mạo"
+  - "chiếm đoạt tài sản"
+  - "lừa đảo trực tuyến"
+  - "mạo danh"
+  - "tống tiền"
+  - "hack tài khoản"
+  - "scam"
+  - "tiền số"
+  - "đầu tư ảo"
+  - "AI giả giọng"
+
+# Chủ đề đã sản xuất (tránh trùng lặp) — sẽ được đồng bộ thêm từ DB
+seen_topics: []
